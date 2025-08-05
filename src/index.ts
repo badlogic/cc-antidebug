@@ -109,7 +109,6 @@ export function restoreClaudeBinary(claudePath?: string): void {
 	const backupPath = `${claudePath}.backup`;
 	
 	if (!existsSync(backupPath)) {
-		console.warn("No backup found. Nothing to restore.");
 		return;
 	}
 	

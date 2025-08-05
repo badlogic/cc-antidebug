@@ -18,6 +18,23 @@ npm install @mariozechner/cc-antidebug
 
 ## Usage
 
+### CLI
+
+```bash
+# One-time use with npx (no installation required)
+npx @mariozechner/cc-antidebug patch
+npx @mariozechner/cc-antidebug restore
+
+# Or install globally
+npm install -g @mariozechner/cc-antidebug
+
+# Then use directly
+cc-antidebug patch
+cc-antidebug restore
+```
+
+### Programmatic API
+
 Import and patch before using Claude Code SDK, optionally restore the original binary:
 
 ```javascript
