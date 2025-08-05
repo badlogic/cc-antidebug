@@ -1,6 +1,6 @@
 # cc-antidebug
 
-Disable Claude Code's anti-debugging so you can debug your Node.js apps using the official Claude Code TypeScript SDK.
+Disable Claude Code's anti-debugging so you can debug your Node.js apps that integrate the official Claude Code TypeScript SDK.
 
 ## Problem
 

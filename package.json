@@ -1,6 +1,6 @@
 {
 	"name": "@mariozechner/cc-antidebug",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"description": "Disable Claude Code's anti-debugging so you can debug your NodeJS apps using the official Claude Code Typescript SDK.",
 	"type": "module",
 	"main": "dist/index.js",
