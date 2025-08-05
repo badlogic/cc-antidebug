@@ -1,0 +1,45 @@
+{
+	"name": "@mariozechner/cc-antidebug",
+	"version": "0.1.0",
+	"description": "Disable Claude Code's anti-debugging so you can debug your NodeJS apps using the official Claude Code Typescript SDK.",
+	"type": "module",
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"clean": "rm -rf dist",
+		"prepublishOnly": "npm run clean && npm run build",
+		"check": "biome check --write . && tsc --noEmit",
+		"prepare": "husky"
+	},
+	"files": [
+		"dist/**/*",
+		"README.md"
+	],
+	"keywords": [
+		"claude-code",
+		"debug",
+		"debugging",
+		"anti-debug",
+		"anthropic",
+		"claude",
+		"sdk"
+	],
+	"author": "",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": ""
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	},
+	"devDependencies": {
+		"@anthropic-ai/claude-code": "^1.0.68",
+		"@biomejs/biome": "^2.1.3",
+		"@types/node": "^18.0.0",
+		"husky": "^9.1.7",
+		"tsx": "^4.20.3",
+		"typescript": "^5.9.2"
+	},
+	"types": "./dist/index.d.ts"
+}
