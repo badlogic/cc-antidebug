@@ -6,7 +6,7 @@ import { patchClaudeBinary, restoreClaudeBinary } from "../src/index.js";
 patchClaudeBinary();
 
 try {
-	const response = query({prompt: "What is your function?"});
+	const response = query({ prompt: "What is your function?" });
 	for await (const message of response) {
 		console.log(JSON.stringify(message, null, 2));
 	}

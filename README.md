@@ -8,7 +8,13 @@ Claude Code's TypeScript SDK prevents debugging by checking for inspector/debugg
 
 ## Solution
 
-This package patches the Claude binary to disable anti-debugging checks, allowing you to use debuggers with NodeJS apps that integrate the Claude Code SDK. This removes the annoyance.
+This package patches the Claude binary to:
+1. Disable anti-debugging checks, allowing you to use debuggers with NodeJS apps that integrate the Claude Code SDK
+2. Remove subscription-based cost monitoring restrictions
+
+The patched binary is automatically formatted with Biome to ensure consistent code formatting.
+
+**Note:** Claude Code may restore the binary on its own (e.g., during automatic version upgrades). You may need to re-run the patch command after Claude Code updates.
 
 ## Installation
 
@@ -31,6 +37,10 @@ npm install -g @mariozechner/cc-antidebug
 # Then use directly
 cc-antidebug patch
 cc-antidebug restore
+
+# Optionally specify a custom Claude binary path
+cc-antidebug patch /path/to/claude
+cc-antidebug restore /path/to/claude
 ```
 
 ### Programmatic API

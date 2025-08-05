@@ -4,6 +4,60 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 /**
+ * Finds a pattern in content and replaces a range based on backward/forward scanning.
+ *
+ * @param content - The content to search in
+ * @param searchPattern - The pattern to find
+ * @param backwardPattern - Pattern to scan backward to (e.g., "return")
+ * @param forwardPattern - Pattern to scan forward to (e.g., ";")
+ * @param replacement - What to replace the range with
+ * @param matchBraces - If true, will match curly braces when scanning
+ * @returns The modified content, or null if pattern not found
+ */
+function scanAndReplace(
+	content: string,
+	searchPattern: string,
+	backwardPattern: string,
+	forwardPattern: string,
+	replacement: string,
+	matchBraces = false,
+): string | null {
+	const searchIndex = content.indexOf(searchPattern);
+	if (searchIndex === -1) return null;
+
+	// Scan backward to find the start pattern
+	let startIndex = searchIndex;
+	for (let i = searchIndex - 1; i >= 0; i--) {
+		const slice = content.slice(i, searchIndex);
+		if (slice.includes(backwardPattern)) {
+			startIndex = i + slice.indexOf(backwardPattern);
+			break;
+		}
+	}
+
+	// Scan forward to find the end pattern
+	let endIndex = searchIndex + searchPattern.length;
+	let braceCount = 0;
+
+	for (let i = searchIndex; i < content.length; i++) {
+		if (matchBraces) {
+			if (content[i] === "{") braceCount++;
+			if (content[i] === "}") braceCount--;
+		}
+
+		if (content[i] === forwardPattern[0] && content.slice(i, i + forwardPattern.length) === forwardPattern) {
+			if (!matchBraces || braceCount === 0) {
+				endIndex = i + forwardPattern.length;
+				break;
+			}
+		}
+	}
+
+	// Replace the range
+	return content.slice(0, startIndex) + replacement + content.slice(endIndex);
+}
+
+/**
  * Patches the Claude binary to disable anti-debugging checks.
  * This allows you to debug your Node.js applications using the official Claude Code TypeScript SDK.
  *
@@ -34,12 +88,21 @@ export function patchClaudeBinary(claudePath?: string): void {
 	let patchedContent = content;
 	let patched = false;
 
+	// First, patch anti-debugging checks
 	for (const pattern of patterns) {
 		const newContent = patchedContent.replace(pattern, "if(false)process.exit(1);");
 		if (newContent !== patchedContent) {
 			patchedContent = newContent;
 			patched = true;
 		}
+	}
+
+	// Second, patch subscription check
+	const subscriptionPatched = scanAndReplace(patchedContent, "no need to monitor cost", "return", ";", ";");
+
+	if (subscriptionPatched) {
+		patchedContent = subscriptionPatched;
+		patched = true;
 	}
 
 	if (!patched) {
@@ -105,13 +168,13 @@ export function getClaudePath(): string {
  */
 export function restoreClaudeBinary(claudePath?: string): void {
 	claudePath = claudePath ?? getClaudePath();
-	
+
 	const backupPath = `${claudePath}.backup`;
-	
+
 	if (!existsSync(backupPath)) {
 		return;
 	}
-	
+
 	// Restore from backup
 	copyFileSync(backupPath, claudePath);
 }
