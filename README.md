@@ -1,10 +1,11 @@
 # cc-antidebug
 
-Disable Claude Code's anti-debugging so you can debug your Node.js apps that integrate the official Claude Code TypeScript SDK.
+Patches Claude Code to enable debugging and cost tracking features.
 
 ## Problem
 
-Claude Code's TypeScript SDK prevents debugging by checking for inspector/debugger presence and terminating the `claude` process if detected. This is very annoying.
+1. Claude Code's TypeScript SDK prevents debugging by checking for inspector/debugger presence and terminating the process if detected
+2. The `/cost` command is restricted to Free tier users only, preventing Pro/Max users from tracking their token usage
 
 ## Solution
 
