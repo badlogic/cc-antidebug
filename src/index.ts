@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, lstatSync, readFileSync, readlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -38,15 +38,25 @@ function scanAndReplace(
 	// Scan forward to find the end pattern
 	let endIndex = searchIndex + searchPattern.length;
 	let braceCount = 0;
+	let foundFirstBrace = false;
 
-	for (let i = searchIndex; i < content.length; i++) {
+	for (let i = startIndex; i < content.length; i++) {
 		if (matchBraces) {
-			if (content[i] === "{") braceCount++;
-			if (content[i] === "}") braceCount--;
-		}
-
-		if (content[i] === forwardPattern[0] && content.slice(i, i + forwardPattern.length) === forwardPattern) {
-			if (!matchBraces || braceCount === 0) {
+			if (content[i] === "{") {
+				braceCount++;
+				foundFirstBrace = true;
+			}
+			if (content[i] === "}" && foundFirstBrace) {
+				braceCount--;
+				if (braceCount === 0) {
+					// Found the matching closing brace
+					endIndex = i + 1;
+					break;
+				}
+			}
+		} else {
+			// Not matching braces, just look for the forward pattern
+			if (content[i] === forwardPattern[0] && content.slice(i, i + forwardPattern.length) === forwardPattern) {
 				endIndex = i + forwardPattern.length;
 				break;
 			}
@@ -75,7 +85,21 @@ export function patchClaudeBinary(claudePath?: string): void {
 	// Read the Claude binary
 	const content = readFileSync(claudePath, "utf8");
 
-	// Multiple patterns to match different variations of anti-debugging checks
+	let patchedContent = content;
+	let patched = false;
+
+	// First, patch the anti-debugging filter that removes --inspect arguments
+	// Look for filter functions that check for --inspect
+	// Pattern found: .filter((I)=>!I.startsWith("--inspect"))
+	const inspectPattern = /\.filter\(\([A-Za-z]+\)=>![A-Za-z]+\.startsWith\("--inspect"\)\)/g;
+	const antiDebugPatched = patchedContent.replace(inspectPattern, '.filter(()=>true)');
+	
+	if (antiDebugPatched !== patchedContent) {
+		patchedContent = antiDebugPatched;
+		patched = true;
+	}
+
+	// Also patch any direct debugger detection checks
 	const patterns = [
 		// Standard pattern: if(PF5())process.exit(1);
 		/if\([A-Za-z0-9_$]+\(\)\)process\.exit\(1\);/g,
@@ -85,10 +109,6 @@ export function patchClaudeBinary(claudePath?: string): void {
 		/if\([A-Za-z0-9_$]+\(\)\)process\.exit\(\d+\);/g,
 	];
 
-	let patchedContent = content;
-	let patched = false;
-
-	// First, patch anti-debugging checks
 	for (const pattern of patterns) {
 		const newContent = patchedContent.replace(pattern, "if(false)process.exit(1);");
 		if (newContent !== patchedContent) {
@@ -118,24 +138,26 @@ export function getClaudePath(): string {
 	// First try which (in PATH)
 	try {
 		const claudePath = execSync("which claude", { encoding: "utf8" }).trim();
-		if (claudePath) return claudePath;
+		if (claudePath) {
+			return resolveClaudePath(claudePath);
+		}
 	} catch {
 		// which failed, continue searching
 	}
 
-	// Check common locations including the claude local installation
+	// Check common locations, prioritizing the official .claude/local installation
 	const locations = [
 		join(homedir(), ".claude/local/claude"),
+		join(homedir(), ".local/bin/claude"),
 		join(homedir(), ".npm-global/bin/claude"),
 		"/usr/local/bin/claude",
-		join(homedir(), ".local/bin/claude"),
-		join(homedir(), "node_modules/.bin/claude"),
 		join(homedir(), ".yarn/bin/claude"),
+		join(homedir(), "node_modules/.bin/claude"), // Check this last as it might be outdated
 	];
 
 	for (const path of locations) {
 		if (existsSync(path)) {
-			return path;
+			return resolveClaudePath(path);
 		}
 	}
 
@@ -158,6 +180,49 @@ export function getClaudePath(): string {
 			"\nIf already installed locally, try:\n" +
 			'  export PATH="$HOME/node_modules/.bin:$PATH"',
 	);
+}
+
+/**
+ * Resolves a Claude path that might be a bash script redirecting to the actual JS file.
+ * @param path - The path to resolve
+ * @returns The path to the actual JavaScript file
+ */
+function resolveClaudePath(path: string): string {
+	// Read the file to check if it's a bash script
+	try {
+		const content = readFileSync(path, "utf8");
+
+		// Check if it's a bash script that redirects to another file
+		if (content.startsWith("#!/bin/bash") || content.startsWith("#!/usr/bin/env bash")) {
+			// Look for exec statements that redirect to the actual claude binary
+			const execMatch = content.match(/exec\s+"([^"]+)"/);
+			if (execMatch && execMatch[1]) {
+				const redirectPath = execMatch[1];
+				// Resolve relative paths
+				const resolvedPath = redirectPath.startsWith("/") ? redirectPath : join(path, "..", redirectPath);
+
+				// Follow the redirect
+				if (existsSync(resolvedPath)) {
+					// Check if this is also a symlink or another redirect
+					return resolveClaudePath(resolvedPath);
+				}
+			}
+		}
+
+		// Check if it's a symlink
+		const stats = lstatSync(path);
+		if (stats.isSymbolicLink()) {
+			const target = readlinkSync(path);
+			const resolvedPath = target.startsWith("/") ? target : join(path, "..", target);
+			return resolveClaudePath(resolvedPath);
+		}
+
+		// It's a regular file, return it
+		return path;
+	} catch {
+		// If we can't read or resolve, just return the original path
+		return path;
+	}
 }
 
 /**
