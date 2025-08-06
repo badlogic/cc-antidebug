@@ -10,7 +10,7 @@ Claude Code's TypeScript SDK prevents debugging by checking for inspector/debugg
 
 This package patches the Claude binary to:
 1. Disable anti-debugging checks, allowing you to use debuggers with NodeJS apps that integrate the Claude Code SDK
-2. Remove subscription-based cost monitoring restrictions
+2. Enable the `/cost` command for Pro and Max plan users, showing token usage and cost information for the current session
 
 The patched binary is automatically formatted with Biome to ensure consistent code formatting.
 
