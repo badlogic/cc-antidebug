@@ -88,17 +88,6 @@ export function patchClaudeBinary(claudePath?: string): void {
 	let patchedContent = content;
 	let patched = false;
 
-	// First, patch the anti-debugging filter that removes --inspect arguments
-	// Look for filter functions that check for --inspect
-	// Pattern found: .filter((I)=>!I.startsWith("--inspect"))
-	const inspectPattern = /\.filter\(\([A-Za-z]+\)=>![A-Za-z]+\.startsWith\("--inspect"\)\)/g;
-	const antiDebugPatched = patchedContent.replace(inspectPattern, '.filter(()=>true)');
-	
-	if (antiDebugPatched !== patchedContent) {
-		patchedContent = antiDebugPatched;
-		patched = true;
-	}
-
 	// Also patch any direct debugger detection checks
 	const patterns = [
 		// Standard pattern: if(PF5())process.exit(1);
