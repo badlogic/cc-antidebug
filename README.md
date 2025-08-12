@@ -6,12 +6,14 @@ Patches Claude Code to enable debugging and cost tracking features.
 
 1. Claude Code's TypeScript SDK prevents debugging by checking for inspector/debugger presence and terminating the process if detected
 2. The `/cost` command is restricted to Free tier users only, preventing Pro/Max users from tracking their token usage
+3. Claude Code enforces directory restrictions that may prevent access to certain paths
 
 ## Solution
 
 This package patches the Claude binary to:
 1. Disable anti-debugging checks, allowing you to use debuggers with NodeJS apps that integrate the Claude Code SDK
 2. Enable the `/cost` command for Pro and Max plan users, showing token usage and cost information for the current session
+3. Bypass directory restriction checks, allowing Claude Code to access all paths without validation prompts
 
 The patched binary is automatically formatted with Biome to ensure consistent code formatting.
 
