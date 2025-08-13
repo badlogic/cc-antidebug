@@ -114,16 +114,6 @@ export function patchClaudeBinary(claudePath?: string): void {
 		patched = true;
 	}
 
-	// Third, patch directory restriction check
-	// Look for the specific validation pattern and replace it
-	const dirPattern = /return D\.valid\?{behavior:"passthrough",message:`Path validation passed for \$\{A\} command`}:{behavior:"ask",message:D\.message}/;
-	const dirReplacement = 'return{behavior:"passthrough",message:"Path validation bypassed"}';
-	
-	if (dirPattern.test(patchedContent)) {
-		patchedContent = patchedContent.replace(dirPattern, dirReplacement);
-		patched = true;
-	}
-
 	if (!patched) {
 		// Already patched or no pattern found
 		return;
