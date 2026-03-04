@@ -107,7 +107,7 @@ export function patchClaudeBinary(claudePath?: string): void {
 	}
 
 	// Second, patch subscription check
-	const subscriptionPatched = scanAndReplace(patchedContent, "no need to monitor cost", "return", ";", ";");
+	const subscriptionPatched = scanAndReplace(patchedContent, "You are currently using your subscription to power your Claude Code usage", "=>{", "return", "=>{ if (false) { return");
 
 	if (subscriptionPatched) {
 		patchedContent = subscriptionPatched;
